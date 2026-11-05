@@ -65,3 +65,6 @@ Run 2: 60 valid records, numeric prices, HTTPS URLs, 63 cache hits
 ]
 ```
 Rechecked after adding catalogue-page error isolation: 60 valid, 1 simulated failed page; catalogue count remains actual (3).
+
+## Stage 6
+2026-11-05T07:37:11.437661+00:00 — `python -m pytest -q`: 9 passed. `python scraper.py`: 60 valid, zero failures, 63 cache hits. README run command and schema checked; sample outputs included, cache excluded. Seven required stage commits will be present after this checkpoint commit.
