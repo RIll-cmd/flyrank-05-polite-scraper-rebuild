@@ -11,3 +11,16 @@ All checks occurred during the current rebuild before the corresponding commit. 
 FETCH https://books.toscrape.com/catalogue/page-1.html 50469
 CACHE HIT https://books.toscrape.com/catalogue/page-1.html 50469
 ```
+
+## Stage 2
+2026-11-05T07:30:48.507026+00:00 — `python scraper.py` twice:
+```text
+CACHE HIT https://books.toscrape.com/catalogue/page-1.html 50469
+FETCH https://books.toscrape.com/catalogue/page-2.html 50877
+FETCH https://books.toscrape.com/catalogue/page-3.html 51374
+catalogue_pages=3 discovered=60 unique_urls=60
+CACHE HIT https://books.toscrape.com/catalogue/page-1.html 50469
+CACHE HIT https://books.toscrape.com/catalogue/page-2.html 50877
+CACHE HIT https://books.toscrape.com/catalogue/page-3.html 51374
+catalogue_pages=3 discovered=60 unique_urls=60
+```

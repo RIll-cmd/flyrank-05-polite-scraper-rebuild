@@ -3,8 +3,9 @@ import json
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
 import requests
+from bs4 import BeautifulSoup
 
 BASE = 'https://books.toscrape.com/'
 CACHE = Path('cache')
@@ -39,5 +40,27 @@ def fetch(url):
     print('FETCH', url, len(response.content))
     return result
 
+def discover(html, url):
+    soup = BeautifulSoup(html, 'html.parser')
+    return [urljoin(url, a['href']) for a in soup.select('article.product_pod h3 a[href]')]
+
+def discover_catalogue():
+    url = BASE + 'catalogue/page-1.html'
+    products = {}
+    discovered = 0
+    for number in range(3):
+        page = fetch(url)
+        links = discover(page['html'], url)
+        discovered += len(links)
+        for product in links:
+            products.setdefault(product, url)
+        next_link = BeautifulSoup(page['html'], 'html.parser').select_one('li.next a')
+        if number < 2:
+            if next_link is None:
+                raise ValueError('missing next catalogue link')
+            url = urljoin(url, next_link['href'])
+    print(f'catalogue_pages=3 discovered={discovered} unique_urls={len(products)}')
+    return products
+
 if __name__ == '__main__':
-    fetch(BASE + 'catalogue/page-1.html')
+    discover_catalogue()
