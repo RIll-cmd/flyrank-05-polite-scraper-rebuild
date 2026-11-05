@@ -1,3 +1,6 @@
+import re
+from typing import Literal
+from pydantic import BaseModel, Field, HttpUrl, field_validator
 import hashlib
 import json
 import time
@@ -91,5 +94,41 @@ def collect_raw():
     print(f'detail_pages={len(books)}')
     return books
 
+class Book(BaseModel):
+    title: str = Field(min_length=1)
+    product_url: HttpUrl
+    price_text: str
+    price_gbp: float = Field(ge=0)
+    availability_text: str = Field(min_length=1)
+    rating_text: Literal['One', 'Two', 'Three', 'Four', 'Five']
+    description: str | None
+    source_page: HttpUrl
+    fetched_at: datetime
+
+    @field_validator('product_url', 'source_page')
+    @classmethod
+    def https_only(cls, value):
+        if value.scheme != 'https':
+            raise ValueError('HTTPS required')
+        return value
+
+def parse_price(value):
+    if not re.fullmatch(r'£\d+\.\d{2}', value.strip()):
+        raise ValueError('invalid GBP price')
+    return float(value.strip()[1:])
+
+def normalize(raw):
+    cleaned = dict(raw)
+    for key in ['title', 'availability_text', 'description']:
+        if cleaned[key] is not None:
+            cleaned[key] = ' '.join(cleaned[key].split())
+    cleaned['price_gbp'] = parse_price(cleaned['price_text'])
+    return Book(**cleaned).model_dump(mode='json')
+
+def run():
+    books = [normalize(raw) for raw in collect_raw()]
+    Path('output/books.json').write_text(json.dumps(books, indent=2, ensure_ascii=False), encoding='utf8')
+    print(f'valid_records={len(books)}')
+
 if __name__ == '__main__':
-    collect_raw()
+    run()
