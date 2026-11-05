@@ -24,3 +24,9 @@ CACHE HIT https://books.toscrape.com/catalogue/page-2.html 50877
 CACHE HIT https://books.toscrape.com/catalogue/page-3.html 51374
 catalogue_pages=3 discovered=60 unique_urls=60
 ```
+
+## Stage 3
+2026-11-05T07:33:36.728054+00:00 — `python scraper.py` fetched 60 detail pages live. Exactly 60 raw records with eight keys; optional description may be null. Full fetch trace in stage3-live.log. Example:
+```json
+{"title": "A Light in the Attic", "product_url": "https://books.toscrape.com/catalogue/a-light-in-the-attic_1000/index.html", "price_text": "£51.77", "availability_text": "In stock (22 available)", "rating_text": "Three", "description": "It's hard to imagine a world without A Light in the Attic. This now-classic collection of poetry and drawings from Shel Silverstein celebrates its 20th anniversary with this special edition. Silverstein's humorous and creative verse can amuse the dowdiest of readers. Lemon-faced adults and fidgety kids sit still and read these rhythmic words and laugh and smile and love th It's hard to imagine a world without A Light in the Attic. This now-classic collection of poetry and drawings from Shel Silverstein celebrates its 20th anniversary with this special edition. Silverstein's humorous and creative verse can amuse the dowdiest of readers. Lemon-faced adults and fidgety kids sit still and read these rhythmic words and laugh and smile and love that Silverstein. Need proof of his genius? RockabyeRockabye baby, in the treetopDon't you know a treetopIs no safe place to rock?And who put you up there,And your cradle, too?Baby, I think someone down here'sGot it in for you. Shel, you never sounded so good. ...more", "source_page": "https://books.toscrape.com/catalogue/page-1.html", "fetched_at": "2026-11-05T07:31:07.908596+00:00"}
+```

@@ -62,5 +62,34 @@ def discover_catalogue():
     print(f'catalogue_pages=3 discovered={discovered} unique_urls={len(products)}')
     return products
 
+def extract_raw(html, url, source, fetched_at):
+    soup = BeautifulSoup(html, 'html.parser')
+    main = soup.select_one('.product_main')
+    if main is None:
+        raise ValueError('missing product area')
+    marker = soup.select_one('#product_description')
+    description = marker.find_next_sibling('p') if marker else None
+    return {
+        'title': main.select_one('h1').get_text(' ', strip=True),
+        'product_url': url,
+        'price_text': main.select_one('.price_color').get_text(strip=True),
+        'availability_text': main.select_one('.availability').get_text(' ', strip=True),
+        'rating_text': main.select_one('.star-rating')['class'][-1],
+        'description': description.get_text(' ', strip=True) if description else None,
+        'source_page': source,
+        'fetched_at': fetched_at,
+    }
+
+def collect_raw():
+    books = []
+    for url, source in discover_catalogue().items():
+        page = fetch(url)
+        books.append(extract_raw(page['html'], url, source, page['fetched_at']))
+    Path('output').mkdir(exist_ok=True)
+    Path('output/raw-books.json').write_text(json.dumps(books, indent=2, ensure_ascii=False), encoding='utf8')
+    print(json.dumps(books[0], ensure_ascii=False))
+    print(f'detail_pages={len(books)}')
+    return books
+
 if __name__ == '__main__':
-    discover_catalogue()
+    collect_raw()
