@@ -35,3 +35,33 @@ catalogue_pages=3 discovered=60 unique_urls=60
 2026-11-05T07:34:15.463524+00:00 — `python scraper.py` twice; JSON assertions:
 Run 1: 60 valid records, numeric prices, HTTPS URLs, 63 cache hits
 Run 2: 60 valid records, numeric prices, HTTPS URLs, 63 cache hits
+
+## Stage 5
+2026-11-05T07:35:50.923141+00:00 — `python scraper.py` then `python scraper.py --simulate-failure`; both retained all 60 good books; injected fake URL recorded and skipped. Reports:
+```json
+[
+  {
+    "started_at": "2026-11-05T07:35:46.432123+00:00",
+    "duration_seconds": 2.459,
+    "pages_fetched": 0,
+    "cache_hits": 63,
+    "catalogue_pages": 3,
+    "unique_urls": 60,
+    "valid_records": 60,
+    "invalid_records": 0,
+    "failed_pages": 0
+  },
+  {
+    "started_at": "2026-11-05T07:35:50.008998+00:00",
+    "duration_seconds": 0.819,
+    "pages_fetched": 0,
+    "cache_hits": 63,
+    "catalogue_pages": 3,
+    "unique_urls": 61,
+    "valid_records": 60,
+    "invalid_records": 0,
+    "failed_pages": 1
+  }
+]
+```
+Rechecked after adding catalogue-page error isolation: 60 valid, 1 simulated failed page; catalogue count remains actual (3).

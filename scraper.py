@@ -47,22 +47,30 @@ def discover(html, url):
     soup = BeautifulSoup(html, 'html.parser')
     return [urljoin(url, a['href']) for a in soup.select('article.product_pod h3 a[href]')]
 
-def discover_catalogue():
+def discover_catalogue(errors=None):
     url = BASE + 'catalogue/page-1.html'
     products = {}
-    discovered = 0
+    discovered = pages = 0
     for number in range(3):
-        page = fetch(url)
-        links = discover(page['html'], url)
-        discovered += len(links)
-        for product in links:
-            products.setdefault(product, url)
-        next_link = BeautifulSoup(page['html'], 'html.parser').select_one('li.next a')
-        if number < 2:
-            if next_link is None:
-                raise ValueError('missing next catalogue link')
-            url = urljoin(url, next_link['href'])
-    print(f'catalogue_pages=3 discovered={discovered} unique_urls={len(products)}')
+        try:
+            page = fetch(url)
+            pages += 1
+            links = discover(page['html'], url)
+            discovered += len(links)
+            for product in links:
+                products.setdefault(product, url)
+            next_link = BeautifulSoup(page['html'], 'html.parser').select_one('li.next a')
+            if number < 2:
+                if next_link is None:
+                    raise ValueError('missing next catalogue link')
+                url = urljoin(url, next_link['href'])
+        except (requests.RequestException, ValueError) as error:
+            if errors is None:
+                raise
+            errors.append({'url': url, 'error': str(error)})
+            break
+    FETCH_STATS['catalogue_pages'] = pages
+    print(f'catalogue_pages={pages} discovered={discovered} unique_urls={len(products)}')
     return products
 
 def extract_raw(html, url, source, fetched_at):
@@ -125,10 +133,47 @@ def normalize(raw):
     cleaned['price_gbp'] = parse_price(cleaned['price_text'])
     return Book(**cleaned).model_dump(mode='json')
 
-def run():
-    books = [normalize(raw) for raw in collect_raw()]
-    Path('output/books.json').write_text(json.dumps(books, indent=2, ensure_ascii=False), encoding='utf8')
-    print(f'valid_records={len(books)}')
+def run(simulate_failure=False):
+    started = datetime.now(timezone.utc)
+    clock = time.monotonic()
+    FETCH_STATS.update(pages_fetched=0, cache_hits=0)
+    output = Path('output')
+    output.mkdir(exist_ok=True)
+    books, errors = [], []
+    failed_pages = invalid_records = 0
+    products = discover_catalogue(errors)
+    failed_pages = len(errors)
+    if simulate_failure:
+        products[BASE + 'catalogue/flyrank-simulated-missing-book'] = BASE + 'catalogue/page-3.html'
+    for url, source in products.items():
+        try:
+            if url.endswith('flyrank-simulated-missing-book'):
+                raise requests.ConnectionError('Simulated broken URL; no extra request sent')
+            page = fetch(url)
+            books.append(normalize(extract_raw(page['html'], url, source, page['fetched_at'])))
+        except requests.RequestException as error:
+            failed_pages += 1
+            errors.append({'url': url, 'error': str(error)})
+        except (ValueError, AttributeError, KeyError, IndexError) as error:
+            invalid_records += 1
+            errors.append({'url': url, 'error': str(error)})
+    report = {
+        'started_at': started.isoformat(),
+        'duration_seconds': round(time.monotonic() - clock, 3),
+        **FETCH_STATS,
+        'catalogue_pages': FETCH_STATS.get('catalogue_pages', 0),
+        'unique_urls': len(products),
+        'valid_records': len(books),
+        'invalid_records': invalid_records,
+        'failed_pages': failed_pages,
+    }
+    for name, data in [('books', books), ('errors', errors), ('run-report', report)]:
+        (output / (name + '.json')).write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding='utf8')
+    print(json.dumps(report))
+    return report
 
 if __name__ == '__main__':
-    run()
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--simulate-failure', action='store_true')
+    run(parser.parse_args().simulate_failure)
